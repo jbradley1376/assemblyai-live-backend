@@ -1,3 +1,6 @@
+// Load environment variables from .env file (for local dev only)
+require("dotenv").config();
+
 const express = require("express");
 const cors = require("cors");
 const WebSocket = require("ws");
@@ -16,9 +19,17 @@ let activeSocket = null;
 app.post("/start-stream", (req, res) => {
   console.log("Received request to start stream");
 
-  activeSocket = startAssemblyAI(process.env.ASSEMBLYAI_KEY, (transcript) => {
+  const apiKey = process.env.ASSEMBLYAI_KEY;
+  console.log("API KEY:", apiKey); // Debugging check
+
+  if (!apiKey) {
+    res.status(500).send("API key not found");
+    return;
+  }
+
+  activeSocket = startAssemblyAI(apiKey, (transcript) => {
     console.log("Transcript:", transcript);
-    // Optionally forward transcript to Base44 or process it here
+    // Optional: forward to Base44 or process it here
   });
 
   res.json({ message: "Live transcription initialized" });
@@ -31,19 +42,10 @@ app.post("/audio", (req, res) => {
     return;
   }
 
-  let audioBuffer = [];
-
-  req.on("data", (chunk) => {
-    audioBuffer.push(chunk);
-  });
-
-  req.on("end", () => {
-    const finalBuffer = Buffer.concat(audioBuffer);
-    activeSocket.send(finalBuffer);
-    res.status(200).send("Audio chunk received and sent.");
-  });
+  // Audio streaming implementation goes here if needed
+  res.sendStatus(200);
 });
 
 app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
+  console.log(`Server listening on port ${PORT}`);
 });
